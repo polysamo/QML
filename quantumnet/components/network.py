@@ -7,7 +7,7 @@ import random
 import os
 import csv
 import matplotlib.pyplot as plt
-from simulation import ClassificadorQML
+
 
 class Network():
     """
@@ -773,11 +773,14 @@ class Network():
             custom_circuit (QuantumCircuit, opcional): Um circuito quântico customizado.
 
         Returns:
-            QuantumCircuit: O circuito quântico gerado.
+            tuple: (QuantumCircuit, num_qubits, circuit_depth)
         """
         if custom_circuit is not None:
-            qc = custom_circuit  # Usa o circuito fornecido
+            # Usa o circuito customizado fornecido (gerado pelo ClassificadorQML)
+            qc = custom_circuit
+            self.logger.log(f"Usando circuito customizado com {num_qubits} qubits.")
         else:
+            # Gera um circuito aleatório
             qc = QuantumCircuit(num_qubits)
             single_qubit_gates = ['h', 'x', 'y', 'z', 's', 't']
             two_qubit_gates = ['cx', 'cz', 'swap']
@@ -803,18 +806,20 @@ class Network():
 
         # **Agora garantindo que o circuito é salvo e registrado**
         
-        # Desenha e exibe o circuito graficamente (caso precise visualizar)
+        # Desenha e exibe o circuito graficamente (opcional para debug)
         fig = qc.draw("mpl", style="clifford")
         plt.show()
 
-        # Salva as instruções para log e debug
+        # **Salva as instruções para log e debug**
         saved_instructions = self.save_circuit_instructions(qc)
         self.logger.log(f"Circuito gerado com {num_qubits} qubits e {num_gates} portas. Instruções salvas.")
 
         for instr in saved_instructions:
             self.logger.log(f"Instrução: {instr}")
 
+        # **Calcula a profundidade do circuito**
         circuit_depth = qc.depth()
+
         return qc, num_qubits, circuit_depth
 
 

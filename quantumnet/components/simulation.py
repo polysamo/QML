@@ -1,12 +1,3 @@
-import networkx as nx
-from qiskit import QuantumCircuit
-from ..objects import Logger, Qubit
-from ..components import *
-from .layers import *
-import random
-import os
-import csv
-import matplotlib.pyplot as plt
 import pennylane as qml
 from pennylane import numpy as np
 import torch
@@ -14,7 +5,7 @@ from qiskit import QuantumCircuit
 
 class ClassificadorQML(torch.nn.Module):
     """
-    Classe para criar um modelo de aprendizado de máquina quântico (QML)
+    Classe que cria um modelo de aprendizado de máquina quântico (QML)
     baseado no template StronglyEntanglingLayers.
     """
     def __init__(self, dim_entrada, dim_saida, num_qubits, num_camadas):
@@ -35,14 +26,21 @@ class ClassificadorQML(torch.nn.Module):
 
     def circuito(self, inputs, pesos, viés):
         """Define o circuito quântico do modelo."""
-        inputs = np.random.rand(*self.formato_pesos)  # Gera inputs aleatórios
+
+        # **Garantindo que tudo seja um tensor do PyTorch**
         inputs = torch.tensor(inputs, dtype=torch.float32)  
+        pesos = torch.tensor(pesos, dtype=torch.float32)
+        viés = torch.tensor(viés, dtype=torch.float32)
+
+        # **Redimensionando os inputs para o formato correto**
         inputs = torch.reshape(inputs, self.formato_pesos)
 
+        # **Usando os valores corretamente formatados no circuito**
         qml.StronglyEntanglingLayers(
             weights=pesos * inputs + viés, wires=range(self.num_qubits)
         )
         return [qml.expval(qml.PauliZ(i)) for i in range(self.dim_saida)]
+
 
     def gerar_qiskit_circuit(self):
         """
@@ -51,13 +49,13 @@ class ClassificadorQML(torch.nn.Module):
         qc = QuantumCircuit(self.num_qubits)
 
         # Criando pesos e viés fictícios
-        pesos_falsos = np.random.rand(*self.formato_pesos)
-        vies_falso = np.random.rand(*self.formato_pesos)
-        entradas_falsas = np.random.rand(*self.formato_pesos)  
+        pesos= np.random.rand(*self.formato_pesos)
+        vies = np.random.rand(*self.formato_pesos)
+        entradas = np.random.rand(*self.formato_pesos)  
 
         # Extraindo operações
         with qml.tape.QuantumTape() as tape:
-            self.qnode(entradas_falsas, pesos_falsos, vies_falso)
+            self.qnode(entradas, pesos, vies)
 
         for op in tape.operations:
             nome_puerta = op.name
@@ -77,3 +75,4 @@ class ClassificadorQML(torch.nn.Module):
                 qc.swap(qubits[0], qubits[1])
 
         return qc
+    
