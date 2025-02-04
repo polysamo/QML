@@ -7,7 +7,7 @@ import random
 import os
 import csv
 import matplotlib.pyplot as plt
-
+from simulation import ClassificadorQML
 
 class Network():
     """
@@ -706,61 +706,117 @@ class Network():
 
     # SIMULAÇÃO DA REDE
 
-    def generate_random_circuit(self, num_qubits=10, num_gates=30):
-        """
-        Gera um circuito quântico aleatório, armazena suas instruções e exibe o circuito.
+    # def generate_random_circuit(self, num_qubits=10, num_gates=30):
+    #     """
+    #     Gera um circuito quântico aleatório, armazena suas instruções e exibe o circuito.
         
+    #     Args:
+    #         num_qubits (int): Número de qubits no circuito.
+    #         num_gates (int): Número de operações (portas) no circuito.
+
+    #     Returns:
+    #         QuantumCircuit: O circuito quântico gerado.
+    #     """
+    #     # Cria o circuito quântico
+    #     qc = QuantumCircuit(num_qubits)
+
+    #     # Define as portas quânticas possíveis
+    #     single_qubit_gates = ['h', 'x', 'y', 'z', 's', 't']
+    #     two_qubit_gates = ['cx', 'cz', 'swap']
+
+    #     # Aplica operações aleatórias
+    #     for _ in range(num_gates):
+    #         gate_type = random.choice(['single', 'two'])
+
+    #         if gate_type == 'single':
+    #             gate = random.choice(single_qubit_gates)
+    #             qubit = random.randint(0, num_qubits - 1)
+    #             getattr(qc, gate)(qubit)
+    #         elif gate_type == 'two':
+    #             gate = random.choice(two_qubit_gates)
+    #             qubit1 = random.randint(0, num_qubits - 1)
+    #             qubit2 = random.randint(0, num_qubits - 1)
+    #             while qubit1 == qubit2:
+    #                 qubit2 = random.randint(0, num_qubits - 1)
+
+    #             if gate == 'cx':
+    #                 qc.cx(qubit1, qubit2)
+    #             elif gate == 'cz':
+    #                 qc.cz(qubit1, qubit2)
+    #             elif gate == 'swap':
+    #                 qc.swap(qubit1, qubit2)
+
+    #     # Exibe o circuito no console
+    #     print(qc)
+
+    #     # Desenha e exibe o circuito graficamente
+    #     fig = qc.draw("mpl",style="clifford")
+    #     plt.show()
+
+    #     # Salva as instruções para log e debug
+    #     saved_instructions = self.save_circuit_instructions(qc)
+    #     self.logger.log(f"Circuito aleatório gerado com {num_qubits} qubits e {num_gates} portas. Instruções sobre o circuito.")
+    #     for instr in saved_instructions:
+    #         self.logger.log(f"Instrução: {instr}")
+
+    #     circuit_depth = qc.depth()
+    #     return qc, num_qubits, circuit_depth
+
+    def generate_random_circuit(self, num_qubits=10, num_gates=30, custom_circuit=None):
+        """
+        Gera um circuito quântico aleatório ou usa um circuito customizado, 
+        armazena suas instruções e exibe o circuito.
+
         Args:
             num_qubits (int): Número de qubits no circuito.
             num_gates (int): Número de operações (portas) no circuito.
+            custom_circuit (QuantumCircuit, opcional): Um circuito quântico customizado.
 
         Returns:
             QuantumCircuit: O circuito quântico gerado.
         """
-        # Cria o circuito quântico
-        qc = QuantumCircuit(num_qubits)
+        if custom_circuit is not None:
+            qc = custom_circuit  # Usa o circuito fornecido
+        else:
+            qc = QuantumCircuit(num_qubits)
+            single_qubit_gates = ['h', 'x', 'y', 'z', 's', 't']
+            two_qubit_gates = ['cx', 'cz', 'swap']
 
-        # Define as portas quânticas possíveis
-        single_qubit_gates = ['h', 'x', 'y', 'z', 's', 't']
-        two_qubit_gates = ['cx', 'cz', 'swap']
-
-        # Aplica operações aleatórias
-        for _ in range(num_gates):
-            gate_type = random.choice(['single', 'two'])
-
-            if gate_type == 'single':
-                gate = random.choice(single_qubit_gates)
-                qubit = random.randint(0, num_qubits - 1)
-                getattr(qc, gate)(qubit)
-            elif gate_type == 'two':
-                gate = random.choice(two_qubit_gates)
-                qubit1 = random.randint(0, num_qubits - 1)
-                qubit2 = random.randint(0, num_qubits - 1)
-                while qubit1 == qubit2:
+            for _ in range(num_gates):
+                gate_type = random.choice(['single', 'two'])
+                if gate_type == 'single':
+                    gate = random.choice(single_qubit_gates)
+                    qubit = random.randint(0, num_qubits - 1)
+                    getattr(qc, gate)(qubit)
+                elif gate_type == 'two':
+                    gate = random.choice(two_qubit_gates)
+                    qubit1 = random.randint(0, num_qubits - 1)
                     qubit2 = random.randint(0, num_qubits - 1)
+                    while qubit1 == qubit2:
+                        qubit2 = random.randint(0, num_qubits - 1)
+                    if gate == 'cx':
+                        qc.cx(qubit1, qubit2)
+                    elif gate == 'cz':
+                        qc.cz(qubit1, qubit2)
+                    elif gate == 'swap':
+                        qc.swap(qubit1, qubit2)
 
-                if gate == 'cx':
-                    qc.cx(qubit1, qubit2)
-                elif gate == 'cz':
-                    qc.cz(qubit1, qubit2)
-                elif gate == 'swap':
-                    qc.swap(qubit1, qubit2)
-
-        # Exibe o circuito no console
-        print(qc)
-
-        # Desenha e exibe o circuito graficamente
-        fig = qc.draw("mpl",style="clifford")
+        # **Agora garantindo que o circuito é salvo e registrado**
+        
+        # Desenha e exibe o circuito graficamente (caso precise visualizar)
+        fig = qc.draw("mpl", style="clifford")
         plt.show()
 
         # Salva as instruções para log e debug
         saved_instructions = self.save_circuit_instructions(qc)
-        self.logger.log(f"Circuito aleatório gerado com {num_qubits} qubits e {num_gates} portas. Instruções sobre o circuito.")
+        self.logger.log(f"Circuito gerado com {num_qubits} qubits e {num_gates} portas. Instruções salvas.")
+
         for instr in saved_instructions:
             self.logger.log(f"Instrução: {instr}")
 
         circuit_depth = qc.depth()
         return qc, num_qubits, circuit_depth
+
 
     def save_circuit_instructions(self, circuit):
         """

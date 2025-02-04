@@ -1,59 +1,79 @@
-import torch
+import networkx as nx
+from qiskit import QuantumCircuit
+from ..objects import Logger, Qubit
+from ..components import *
+from .layers import *
+import random
+import os
+import csv
+import matplotlib.pyplot as plt
 import pennylane as qml
+from pennylane import numpy as np
+import torch
+from qiskit import QuantumCircuit
 
-class QMLClassifier(torch.nn.Module):
+class ClassificadorQML(torch.nn.Module):
     """
-    Classe para um modelo de aprendizado de máquina quântico usando o StronglyEntanglingLayers.
+    Classe para criar um modelo de aprendizado de máquina quântico (QML)
+    baseado no template StronglyEntanglingLayers.
     """
-    def __init__(self, input_dim, output_dim, num_qubits, num_layers):
+    def __init__(self, dim_entrada, dim_saida, num_qubits, num_camadas):
         super().__init__()
-        torch.manual_seed(1337)  # Seed fixa para reprodutibilidade
+        torch.manual_seed(1337)  # Fixar seed para reprodutibilidade
         self.num_qubits = num_qubits
-        self.output_dim = output_dim
-        self.num_layers = num_layers
-        self.device = qml.device("lightning.qubit", wires=self.num_qubits)
-        self.weights_shape = qml.StronglyEntanglingLayers.shape(
-            n_layers=self.num_layers, n_wires=self.num_qubits
+        self.dim_saida = dim_saida
+        self.num_camadas = num_camadas
+        self.dispositivo = qml.device("lightning.qubit", wires=self.num_qubits)
+
+        # Formato dos pesos do circuito
+        self.formato_pesos = qml.StronglyEntanglingLayers.shape(
+            n_layers=self.num_camadas, n_wires=self.num_qubits
         )
 
-        @qml.qnode(self.device)
-        def circuit(inputs, weights, bias):
-            inputs = torch.reshape(inputs, self.weights_shape)
-            qml.StronglyEntanglingLayers(
-                weights=weights * inputs + bias, wires=range(self.num_qubits)
-            )
-            return [qml.expval(qml.PauliZ(i)) for i in range(self.output_dim)]
+        # Criar o QNode
+        self.qnode = qml.QNode(self.circuito, self.dispositivo)
 
-        param_shapes = {"weights": self.weights_shape, "bias": self.weights_shape}
-        init_vals = {
-            "weights": 0.1 * torch.rand(self.weights_shape),
-            "bias": 0.1 * torch.rand(self.weights_shape),
-        }
+    def circuito(self, inputs, pesos, viés):
+        """Define o circuito quântico do modelo."""
+        inputs = np.random.rand(*self.formato_pesos)  # Gera inputs aleatórios
+        inputs = torch.tensor(inputs, dtype=torch.float32)  
+        inputs = torch.reshape(inputs, self.formato_pesos)
 
-        # Inicializa o circuito quântico
-        self.qcircuit = qml.qnn.TorchLayer(
-            qnode=circuit, weight_shapes=param_shapes, init_method=init_vals
+        qml.StronglyEntanglingLayers(
+            weights=pesos * inputs + viés, wires=range(self.num_qubits)
         )
+        return [qml.expval(qml.PauliZ(i)) for i in range(self.dim_saida)]
 
-    def forward(self, x, num_reup=3):
-        inputs_stack = torch.hstack([x] * num_reup)
-        return self.qcircuit(inputs_stack)
+    def gerar_qiskit_circuit(self):
+        """
+        Transforma o circuito PennyLane em um circuito Qiskit compatível com a rede.
+        """
+        qc = QuantumCircuit(self.num_qubits)
 
+        # Criando pesos e viés fictícios
+        pesos_falsos = np.random.rand(*self.formato_pesos)
+        vies_falso = np.random.rand(*self.formato_pesos)
+        entradas_falsas = np.random.rand(*self.formato_pesos)  
 
-def test_quantum_circuit():
-    """Função de teste para criar e rodar o modelo."""
-    input_dim = 256
-    output_dim = 4
-    num_qubits = 8
-    num_layers = 32
-    
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = QMLClassifier(input_dim, output_dim, num_qubits, num_layers).to(device)
-    
-    sample_input = torch.rand((1, input_dim)).to(device)  # Criando uma entrada aleatória
-    output = model(sample_input)
-    print("Saída do modelo:", output)
+        # Extraindo operações
+        with qml.tape.QuantumTape() as tape:
+            self.qnode(entradas_falsas, pesos_falsos, vies_falso)
 
+        for op in tape.operations:
+            nome_puerta = op.name
+            qubits = op.wires.tolist()
 
-if __name__ == "__main__":
-    test_quantum_circuit()
+            if nome_puerta == "RX":
+                qc.rx(np.random.uniform(0, 2 * np.pi), qubits[0])
+            elif nome_puerta == "RY":
+                qc.ry(np.random.uniform(0, 2 * np.pi), qubits[0])
+            elif nome_puerta == "RZ":
+                qc.rz(np.random.uniform(0, 2 * np.pi), qubits[0])
+            elif nome_puerta == "CNOT":
+                qc.cx(qubits[0], qubits[1])
+            elif nome_puerta == "CZ":
+                qc.cz(qubits[0], qubits[1])
+            elif nome_puerta == "SWAP":
+                qc.swap(qubits[0], qubits[1])
+
+        return qc
