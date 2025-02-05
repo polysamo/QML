@@ -884,7 +884,40 @@ class Network():
         return request
 
 
-    def generate_request_slice(self, alice_id, bob_id, num_qubits, num_gates, protocol=None, slice_path=None,scenario=None):
+    # def generate_request_slice(self, alice_id, bob_id, num_qubits, num_gates, protocol=None, slice_path=None,scenario=None):
+    #     """
+    #     Gera uma requisição de teletransporte de qubits.
+
+    #     Args:
+    #         alice_id (int): ID do cliente (Alice).
+    #         bob_id (int): ID do servidor (Bob).
+    #         num_qubits (int): Número de qubits a serem teletransportados.
+    #         num_gates (int): Número de portas no circuito quântico.
+    #         protocol (str): Protocolo associado à requisição.
+    #         slice_path (list): Caminho do slice associado.
+            
+    #     """
+    #     # Gere um circuito quântico aleatório
+    #     quantum_circuit,_, circuit_depth = self.generate_random_circuit(num_qubits, num_gates)
+
+    #     # Cria a requisição com os dados fornecidos
+    #     request = {
+    #         "alice_id": alice_id,
+    #         "bob_id": bob_id,
+    #         "num_qubits": num_qubits,
+    #         "quantum_circuit": quantum_circuit,
+    #         "circuit_depth": circuit_depth,
+    #         "protocol": protocol,
+    #         "slice_path": slice_path,
+    #         "scenario":scenario 
+    #     }
+
+    #     # Adiciona a requisição à fila
+    #     self.requests_queue.append(request)
+    #     self.logger.log(f"Requisição adicionada: Alice {alice_id} -> Bob {bob_id} com protocolo {protocol} e cenário {scenario}.")
+    #     return request
+
+    def generate_request_slice(self, alice_id, bob_id, num_qubits, num_gates, protocol=None, slice_path=None, scenario=None, custom_circuit=None):
         """
         Gera uma requisição de teletransporte de qubits.
 
@@ -892,15 +925,26 @@ class Network():
             alice_id (int): ID do cliente (Alice).
             bob_id (int): ID do servidor (Bob).
             num_qubits (int): Número de qubits a serem teletransportados.
-            num_gates (int): Número de portas no circuito quântico.
+            num_gates (int): Número de portas no circuito quântico (se aplicável).
             protocol (str): Protocolo associado à requisição.
             slice_path (list): Caminho do slice associado.
-            
-        """
-        # Gere um circuito quântico aleatório
-        quantum_circuit,_, circuit_depth = self.generate_random_circuit(num_qubits, num_gates)
+            scenario (int, opcional): O cenário de execução.
+            custom_circuit (QuantumCircuit, opcional): Um circuito quântico personalizado.
 
-        # Cria a requisição com os dados fornecidos
+        Returns:
+            dict: Requisição gerada.
+        """
+        
+        # **Usa o circuito personalizado se for fornecido, senão gera um aleatório**
+        if custom_circuit is not None:
+            quantum_circuit = custom_circuit  # ✅ Usa o circuito do ClassificadorQML
+            circuit_depth = custom_circuit.depth()  # ✅ Obtém a profundidade real do circuito
+            self.logger.log(f"Usando circuito personalizado com {num_qubits} qubits e profundidade {circuit_depth}.")
+        else:
+            quantum_circuit, _, circuit_depth = self.generate_random_circuit(num_qubits, num_gates)
+            self.logger.log(f"Gerado circuito aleatório com {num_qubits} qubits e {circuit_depth} camadas.")
+
+        # **Cria a requisição com os dados fornecidos**
         request = {
             "alice_id": alice_id,
             "bob_id": bob_id,
@@ -909,12 +953,13 @@ class Network():
             "circuit_depth": circuit_depth,
             "protocol": protocol,
             "slice_path": slice_path,
-            "scenario":scenario 
+            "scenario": scenario
         }
 
-        # Adiciona a requisição à fila
+        # **Adiciona a requisição à fila**
         self.requests_queue.append(request)
         self.logger.log(f"Requisição adicionada: Alice {alice_id} -> Bob {bob_id} com protocolo {protocol} e cenário {scenario}.")
+        
         return request
 
 
