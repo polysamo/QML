@@ -706,62 +706,6 @@ class Network():
 
     # SIMULAÇÃO DA REDE
 
-    # def generate_random_circuit(self, num_qubits=10, num_gates=30):
-    #     """
-    #     Gera um circuito quântico aleatório, armazena suas instruções e exibe o circuito.
-        
-    #     Args:
-    #         num_qubits (int): Número de qubits no circuito.
-    #         num_gates (int): Número de operações (portas) no circuito.
-
-    #     Returns:
-    #         QuantumCircuit: O circuito quântico gerado.
-    #     """
-    #     # Cria o circuito quântico
-    #     qc = QuantumCircuit(num_qubits)
-
-    #     # Define as portas quânticas possíveis
-    #     single_qubit_gates = ['h', 'x', 'y', 'z', 's', 't']
-    #     two_qubit_gates = ['cx', 'cz', 'swap']
-
-    #     # Aplica operações aleatórias
-    #     for _ in range(num_gates):
-    #         gate_type = random.choice(['single', 'two'])
-
-    #         if gate_type == 'single':
-    #             gate = random.choice(single_qubit_gates)
-    #             qubit = random.randint(0, num_qubits - 1)
-    #             getattr(qc, gate)(qubit)
-    #         elif gate_type == 'two':
-    #             gate = random.choice(two_qubit_gates)
-    #             qubit1 = random.randint(0, num_qubits - 1)
-    #             qubit2 = random.randint(0, num_qubits - 1)
-    #             while qubit1 == qubit2:
-    #                 qubit2 = random.randint(0, num_qubits - 1)
-
-    #             if gate == 'cx':
-    #                 qc.cx(qubit1, qubit2)
-    #             elif gate == 'cz':
-    #                 qc.cz(qubit1, qubit2)
-    #             elif gate == 'swap':
-    #                 qc.swap(qubit1, qubit2)
-
-    #     # Exibe o circuito no console
-    #     print(qc)
-
-    #     # Desenha e exibe o circuito graficamente
-    #     fig = qc.draw("mpl",style="clifford")
-    #     plt.show()
-
-    #     # Salva as instruções para log e debug
-    #     saved_instructions = self.save_circuit_instructions(qc)
-    #     self.logger.log(f"Circuito aleatório gerado com {num_qubits} qubits e {num_gates} portas. Instruções sobre o circuito.")
-    #     for instr in saved_instructions:
-    #         self.logger.log(f"Instrução: {instr}")
-
-    #     circuit_depth = qc.depth()
-    #     return qc, num_qubits, circuit_depth
-
     def generate_random_circuit(self, num_qubits=10, num_gates=30, custom_circuit=None):
         """
         Gera um circuito quântico aleatório ou usa um circuito customizado, 
@@ -883,40 +827,6 @@ class Network():
         self.logger.log(f"Requisição adicionada: Alice {alice_id} -> Bob {bob_id} com protocolo {protocols} e cenário {scenario}.")
         return request
 
-
-    # def generate_request_slice(self, alice_id, bob_id, num_qubits, num_gates, protocol=None, slice_path=None,scenario=None):
-    #     """
-    #     Gera uma requisição de teletransporte de qubits.
-
-    #     Args:
-    #         alice_id (int): ID do cliente (Alice).
-    #         bob_id (int): ID do servidor (Bob).
-    #         num_qubits (int): Número de qubits a serem teletransportados.
-    #         num_gates (int): Número de portas no circuito quântico.
-    #         protocol (str): Protocolo associado à requisição.
-    #         slice_path (list): Caminho do slice associado.
-            
-    #     """
-    #     # Gere um circuito quântico aleatório
-    #     quantum_circuit,_, circuit_depth = self.generate_random_circuit(num_qubits, num_gates)
-
-    #     # Cria a requisição com os dados fornecidos
-    #     request = {
-    #         "alice_id": alice_id,
-    #         "bob_id": bob_id,
-    #         "num_qubits": num_qubits,
-    #         "quantum_circuit": quantum_circuit,
-    #         "circuit_depth": circuit_depth,
-    #         "protocol": protocol,
-    #         "slice_path": slice_path,
-    #         "scenario":scenario 
-    #     }
-
-    #     # Adiciona a requisição à fila
-    #     self.requests_queue.append(request)
-    #     self.logger.log(f"Requisição adicionada: Alice {alice_id} -> Bob {bob_id} com protocolo {protocol} e cenário {scenario}.")
-    #     return request
-
     def generate_request_slice(self, alice_id, bob_id, num_qubits, num_gates, protocol=None, slice_path=None, scenario=None, custom_circuit=None):
         """
         Gera uma requisição de teletransporte de qubits.
@@ -980,6 +890,7 @@ class Network():
         else:
             raise AttributeError("O controlador fornecido não possui o método 'schedule_requests'.")
 
+
     def execute_scheduled_requests(self, scheduled_requests, slice_paths=None):
         """
         Recebe e executa as requisições agendadas pelo controlador na rede.
@@ -1007,7 +918,7 @@ class Network():
                 request['status'] = 'executado' if status else 'falhou'
                 self.logger.log(f"Requisição {request} - Status: {request['status']}")
                 
-                
+           
     def execute_request(self, request, slice_paths=None):
         """
         Executa uma requisição, enviando os detalhes para a camada de aplicação da rede.
@@ -1080,4 +991,3 @@ class Network():
         self.logger.log(f"Resultado da execução: {request['status']}")
 
         return success
-
